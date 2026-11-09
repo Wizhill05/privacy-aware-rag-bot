@@ -1,0 +1,72 @@
+[
+  {
+    "user": "user:alice",
+    "relation": "assignee",
+    "object": "role:manager"
+  },
+  {
+    "user": "user:alice",
+    "relation": "member",
+    "object": "department:engineering"
+  },
+  {
+    "user": "user:bob",
+    "relation": "assignee",
+    "object": "role:employee"
+  },
+  {
+    "user": "user:bob",
+    "relation": "member",
+    "object": "department:engineering"
+  },
+  {
+    "user": "user:carol",
+    "relation": "assignee",
+    "object": "role:manager"
+  },
+  {
+    "user": "user:carol",
+    "relation": "member",
+    "object": "department:finance"
+  },
+  {
+    "user": "user:dave",
+    "relation": "assignee",
+    "object": "role:employee"
+  },
+  {
+    "user": "user:dave",
+    "relation": "member",
+    "object": "department:marketing"
+  },
+  {
+    "user": "role:manager#assignee",
+    "relation": "reader",
+    "object": "document:salary_bands_2026"
+  },
+  {
+    "user": "role:manager#assignee",
+    "relation": "reader",
+    "object": "document:budget_q4_2026"
+  },
+  {
+    "user": "department:finance#member",
+    "relation": "reader",
+    "object": "document:budget_q4_2026"
+  },
+  {
+    "user": "role:employee#assignee",
+    "relation": "reader",
+    "object": "document:employee_handbook"
+  },
+  {
+    "user": "role:manager#assignee",
+    "relation": "reader",
+    "object": "document:employee_handbook"
+  },
+  {
+    "user": "department:engineering#member",
+    "relation": "reader",
+    "object": "document:engineering_onboarding"
+  }
+]

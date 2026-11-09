@@ -1,0 +1,29 @@
+{
+  "name": "privacy-aware-rag-bot",
+  "version": "1.0.0",
+  "description": "Auth0 FGA Privacy-Aware RAG Bot for Document-Level Access Control",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/**/*.test.js",
+    "seed:fga": "node scripts/seed-fga.js"
+  },
+  "keywords": [
+    "auth0",
+    "fga",
+    "openfga",
+    "rag",
+    "authorization",
+    "privacy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@openfga/sdk": "^0.6.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-openid-connect": "^2.17.1"
+  }
+}

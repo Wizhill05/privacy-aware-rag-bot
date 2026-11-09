@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy-Aware RAG Bot (Auth0 FGA)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --accent: #8b5cf6;
+      --code-bg: #090d16;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .badge {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .user-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+    }
+
+    .user-switcher label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    select {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      flex: 1;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    .chat-pane {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      line-height: 1.5;
+      font-size: 0.92rem;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: #fff;
+      padding: 0.75rem 1.1rem;
+      border-radius: 14px 14px 2px 14px;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      border-radius: 14px 14px 14px 2px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .message-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .message blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin: 0.6rem 0;
+      color: #cbd5e1;
+      background: rgba(139, 92, 246, 0.08);
+      border-radius: 0 4px 4px 0;
+      padding-top: 0.2rem;
+      padding-bottom: 0.2rem;
+    }
+
+    .message .sources {
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .denied-alert {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 0.75rem;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .chat-input-area {
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+    }
+
+    .prompt-suggestions {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chip:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    form {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+
+    button[type="submit"] {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button[type="submit"]:hover {
+      background: var(--primary-hover);
+    }
+
+    .inspector-pane {
+      background: #090d16;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .inspector-header {
+      padding: 1rem;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inspector-content {
+      padding: 1rem;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+    }
+
+    .card h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .tuple-item {
+      font-family: monospace;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.5rem;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      margin-bottom: 0.3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-allowed {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .status-denied {
+      color: var(--danger);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Acme HR Knowledge Assistant</h1>
+      <span class="badge" id="modeBadge">Auth0 FGA: In-Memory</span>
+    </div>
+
+    <div class="user-switcher">
+      <label for="userSelect">Active Identity:</label>
+      <select id="userSelect">
+        <option value="user:alice">Alice (Manager, Engineering)</option>
+        <option value="user:bob">Bob (Employee, Engineering)</option>
+        <option value="user:carol">Carol (Manager, Finance)</option>
+        <option value="user:dave">Dave (Employee, Marketing)</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="app-container">
+    <div class="chat-pane">
+      <div class="chat-messages" id="messages">
+        <div class="message bot">
+          <div class="message-meta">HR Security Bot &bull; Ready</div>
+          Hello! I am your internal HR knowledge assistant. I can answer questions regarding compensation, budgets, company policies, and engineering guidelines. Access is strictly gated by Auth0 Fine-Grained Authorization (FGA).
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="prompt-suggestions">
+          <span class="chip" onclick="askQuestion('What are the salary bands for software engineers in 2026?')">💰 Salary Bands 2026</span>
+          <span class="chip" onclick="askQuestion('What is our Q4 operating budget breakdown?')">📊 Q4 Budget</span>
+          <span class="chip" onclick="askQuestion('How many days of paid vacation do employees receive?')">🏖️ Vacation Policy</span>
+          <span class="chip" onclick="askQuestion('What are the GitHub onboarding requirements for engineers?')">💻 Eng Onboarding</span>
+        </div>
+
+        <form id="chatForm">
+          <input type="text" id="queryInput" placeholder="Ask a question about HR, salaries, budgets, or policies..." autocomplete="off" required>
+          <button type="submit">Ask Bot</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="inspector-pane">
+      <div class="inspector-header">
+        <span>FGA Authorization Inspector</span>
+        <span id="evalStatus" style="font-size:0.75rem; color:var(--muted);">Post-Retrieval Gate Active</span>
+      </div>
+
+      <div class="inspector-content">
+        <div class="card">
+          <h3>Current User Profile</h3>
+          <div id="userProfile" style="font-size:0.85rem; line-height:1.5;">
+            Loading profile...
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Last Post-Retrieval FGA Check</h3>
+          <div id="fgaAuditLog" style="font-size:0.8rem; color:var(--muted);">
+            No query executed yet. Ask a question to see real-time FGA candidate filtering.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>FGA Access Matrix (Demo)</h3>
+          <div style="font-size:0.75rem; color:#cbd5e1; line-height:1.6;">
+            <div>&bull; <strong>Alice (Mgr, Eng)</strong>: salary_bands, budget, handbook, onboarding</div>
+            <div>&bull; <strong>Bob (Emp, Eng)</strong>: handbook, onboarding (DENIED: salary, budget)</div>
+            <div>&bull; <strong>Carol (Mgr, Fin)</strong>: salary_bands, budget, handbook</div>
+            <div>&bull; <strong>Dave (Emp, Mkt)</strong>: handbook (DENIED: salary, budget, onboarding)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeUser = 'user:alice';
+    const messagesEl = document.getElementById('messages');
+    const queryInput = document.getElementById('queryInput');
+    const userSelect = document.getElementById('userSelect');
+    const userProfileEl = document.getElementById('userProfile');
+    const fgaAuditLogEl = document.getElementById('fgaAuditLog');
+    const modeBadge = document.getElementById('modeBadge');
+
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.user) {
+          activeUser = data.user.id;
+          userSelect.value = activeUser;
+          renderProfile(data.user);
+        }
+      } catch (err) {
+        console.error('Failed to load user profile', err);
+      }
+    }
+
+    function renderProfile(user) {
+      userProfileEl.innerHTML = `
+        <div><strong>User ID:</strong> <span style="font-family:monospace; color:#60a5fa">${user.id}</span></div>
+        <div><strong>Role:</strong> ${user.role || 'N/A'}</div>
+        <div><strong>Department:</strong> ${user.department || 'N/A'}</div>
+        <div><strong>Auth Mode:</strong> ${user.authType}</div>
+      `;
+    }
+
+    userSelect.addEventListener('change', async (e) => {
+      const selected = e.target.value;
+      try {
+        const res = await fetch('/api/auth/mock-switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: selected }),
+        });
+        const data = await res.json();
+        if (data.activeUser) {
+          activeUser = data.activeUser.id;
+          renderProfile(data.activeUser);
+          appendSystemMessage(`Switched active identity to: <strong>${data.activeUser.name}</strong> (${data.activeUser.id})`);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    function askQuestion(q) {
+      queryInput.value = q;
+      document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    }
+
+    function appendUserMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'message user';
+      div.innerText = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function appendBotMessage(data) {
+      const div = document.createElement('div');
+      div.className = 'message bot';
+
+      let html = `<div class="message-meta">${data.user} &bull; Filtered via FGA</div>`;
+      
+      // Format answer blockquotes
+      const formatted = data.answer
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/> (.*?)(<br>|$)/g, '<blockquote>$1</blockquote>');
+      
+      html += `<div>${formatted}</div>`;
+
+      if (data.deniedDocuments && data.deniedDocuments.length > 0) {
+        html += `<div class="denied-alert">
+          <strong>⛔ Auth0 FGA Pre-LLM Filter Activated:</strong> ${data.deniedDocuments.length} candidate document(s) were retrieved by BM25 but strictly withheld from the answering context:
+          <ul style="margin-top:0.3rem; margin-left:1.2rem;">
+            ${data.deniedDocuments.map(d => `<li><code>${d.id}</code> (${d.title})</li>`).join('')}
+          </ul>
+        </div>`;
+      }
+
+      if (data.sources && data.sources.length > 0) {
+        html += `<div class="sources"><strong>Authorized Context Sources:</strong> ${data.sources.join(', ')}</div>`;
+      }
+
+      div.innerHTML = html;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function appendSystemMessage(htmlText) {
+      const div = document.createElement('div');
+      div.className = 'message bot';
+      div.style.background = 'rgba(255,255,255,0.03)';
+      div.style.borderColor = 'rgba(255,255,255,0.1)';
+      div.innerHTML = `<div class="message-meta">System Notification</div><div>${htmlText}</div>`;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderAuditLog(data) {
+      if (!data.auditLog || data.auditLog.length === 0) {
+        fgaAuditLogEl.innerHTML = '<div>No document candidates were retrieved for this query.</div>';
+        return;
+      }
+
+      let html = `<div style="margin-bottom:0.6rem;">User: <strong>${data.user}</strong></div>`;
+      for (const item of data.auditLog) {
+        const statusClass = item.allowed ? 'status-allowed' : 'status-denied';
+        const label = item.allowed ? 'ALLOWED' : 'DENIED';
+        html += `
+          <div class="tuple-item">
+            <span>can_view(document:${item.documentId})</span>
+            <span class="${statusClass}">[${label}]</span>
+          </div>
+        `;
+      }
+
+      html += `<div style="margin-top:0.6rem; font-size:0.75rem;">
+        Summary: ${data.authorizedCount} allowed context(s), ${data.deniedCount} denied context(s).
+      </div>`;
+
+      fgaAuditLogEl.innerHTML = html;
+    }
+
+    document.getElementById('chatForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = queryInput.value.trim();
+      if (!query) return;
+
+      appendUserMessage(query);
+      queryInput.value = '';
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+        });
+        const data = await res.json();
+        appendBotMessage(data);
+        renderAuditLog(data);
+      } catch (err) {
+        console.error(err);
+        appendBotMessage({
+          user: activeUser,
+          answer: 'Error: Failed to process query against internal RAG service.',
+          deniedDocuments: [],
+          sources: [],
+        });
+      }
+    });
+
+    loadUser();
+  </script>
+</body>
+</html>
